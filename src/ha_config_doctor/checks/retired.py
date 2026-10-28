@@ -96,14 +96,15 @@ def _automation_option(ctx: Ctx, rule: Rule) -> None:
 
 
 def _service_steps(ctx: Ctx, patterns: list[str], contexts: list[str] | None = None):
-    for automation in ctx.model.automations:
-        if contexts and "automation" not in contexts:
-            break
-        yield from _matching_steps(automation, automation.actions, patterns)
-    for script in ctx.model.scripts:
-        if contexts and "script" not in contexts:
-            break
-        yield from _matching_steps(script, script.actions, patterns)
+    """Steps calling a matching action, in automations and/or scripts (all of them when contexts is empty)."""
+
+    owners: list[Automation | Script] = []
+    if not contexts or "automation" in contexts:
+        owners.extend(ctx.model.automations)
+    if not contexts or "script" in contexts:
+        owners.extend(ctx.model.scripts)
+    for owner in owners:
+        yield from _matching_steps(owner, owner.actions, patterns)
 
 
 def _matching_steps(owner: Automation | Script, actions: list, patterns: list[str]):
