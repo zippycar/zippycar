@@ -54,9 +54,11 @@ def test_trigger_variables_and_guards():
     assert analyse("{{ trigger.to_state.state if trigger.platform == 'state' }}").trigger_guarded
 
 
-def test_forecast_attribute():
-    assert analyse("{{ state_attr('weather.home', 'forecast') }}").forecast_attribute
-    assert analyse("{{ states.weather.home.attributes.forecast }}").forecast_attribute
+def test_attribute_references():
+    assert analyse("{{ state_attr('weather.home', 'forecast') }}").attribute_refs == [("weather.home", "forecast")]
+    assert analyse("{{ states.weather.home.attributes.forecast }}").attribute_refs == [("weather.home", "forecast")]
+    assert analyse("{{ states['light.a'].attributes.brightness }}").attribute_refs == [("light.a", "brightness")]
+    assert analyse("{{ is_state_attr('climate.x', 'hvac_action', 'heating') }}").attribute_refs == [("climate.x", "hvac_action")]
 
 
 def test_templates_everywhere_are_checked(run):

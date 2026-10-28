@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from . import automations, files_and_old, interactions, references, templates_check
+from . import automations, files_and_old, interactions, references, retired, templates_check
 from .common import Ctx
 
-MODULES = (files_and_old, automations, interactions, templates_check, references)
+MODULES = (files_and_old, retired, automations, interactions, templates_check, references)
 
 
 def run_all(ctx: Ctx) -> list[str]:

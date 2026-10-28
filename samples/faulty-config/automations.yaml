@@ -555,3 +555,25 @@
       data:
         name: Change
         message: Something changed
+- id: "1700000000033"
+  alias: Feels-like frost warning
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.outside_feels_like
+      below: 0
+  actions:
+    - action: notify.notify
+      data:
+        message: "Frost: it feels like {{ states('sensor.outside_feels_like') }} outside"
+- id: "1700000000034"
+  alias: Pretend the phone is at home
+  triggers:
+    - trigger: state
+      entity_id: input_boolean.guest_mode
+      from: "off"
+      to: "on"
+  actions:
+    - action: device_tracker.see
+      data:
+        dev_id: example_phone
+        location_name: home

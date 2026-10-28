@@ -66,7 +66,7 @@ def test_yaml_defined_things_count_as_existing(run):
     files["configuration.yaml"] += (
         "input_boolean:\n  guest:\n    name: Guest\n"
         "group:\n  downstairs:\n    entities: [input_boolean.guest]\n"
-        "sensor:\n  - platform: template\n    sensors:\n      legacy_one:\n        value_template: \"{{ 1 }}\"\n"
+        "sensor:\n  - platform: history_stats\n    name: Legacy one\n    entity_id: input_boolean.guest\n    state: \"on\"\n    type: time\n    start: \"{{ today_at() }}\"\n    end: \"{{ now() }}\"\n"
         "template:\n  - sensor:\n      - name: From template\n        state: \"{{ 1 }}\"\n"
         "scene:\n  - name: Evening\n    entities:\n      input_boolean.guest: \"on\"\n")
     files["scripts.yaml"] = "night:\n  sequence:\n    - action: input_boolean.turn_off\n      target:\n        entity_id: input_boolean.guest\n"

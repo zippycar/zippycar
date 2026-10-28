@@ -27,11 +27,6 @@ def run(ctx: Ctx) -> None:
         for entity in sorted(set(info.direct_state)):
             ctx.add("template-direct-state", use.file, use.line,
                     f"Uses states.{entity}… directly.", where, fix=f"Use states('{entity}') instead.")
-        if info.forecast_attribute:
-            ctx.add("deprecated-option", use.file, use.line,
-                    "Reads the \"forecast\" attribute of a weather entity. Weather entities stopped having it in Home Assistant 2024.3.",
-                    where, severity="Error",
-                    fix="Use the weather.get_forecasts action with response_variable: and read the forecast from that.")
         automation = use.automation
         if automation is not None and info.trigger_attrs & TRIGGER_STATE_ONLY_ATTRS and not info.trigger_guarded and not use.in_trigger_branch:
             other = sorted({trigger_type(t) or "?" for t in automation.triggers
@@ -41,12 +36,13 @@ def run(ctx: Ctx) -> None:
                 ctx.add("trigger-data-mismatch", use.file, use.line,
                         f"Uses {used}, but the automation can also be started by a {quote_list(other)} trigger, which doesn't have it.",
                         automation.where)
-        if not ctx.reg.has_entities:
-            continue
         for entity, how in info.entity_refs:
             if how not in LOOKUP_FUNCTIONS:
                 continue
-            status, _ = entity_status(ctx, entity)
-            if status == "missing":
+            status, extra = entity_status(ctx, entity)
+            if status == "retired":
+                ctx.add("template-missing-entity", use.file, use.line,
+                        f"{how.rstrip('.[]') or 'states'}('{entity}') — {extra}", where)
+            elif status == "missing" and ctx.reg.has_entities:
                 ctx.add("template-missing-entity", use.file, use.line,
                         f"{how.rstrip('.[]') or 'states'}('{entity}') — there is no entity called {entity}.{did_you_mean(ctx, entity)}", where)

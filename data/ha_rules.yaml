@@ -1,0 +1,623 @@
+# Rules about Home Assistant features that have been removed, retired or changed.
+#
+# ha-config-doctor reads this file; none of these facts are written into the program itself.
+# Update this file when Home Assistant changes, then run the tests (they check every rule).
+#
+# Each rule has:
+#   id            a short unique name
+#   kind          what to look for (see "kinds" at the bottom of this file)
+#   match         the details of what to look for
+#   deprecated_in the version where Home Assistant started warning it would go (null if not known)
+#   removed_in    the version where it stopped working (null if not removed, or not known)
+#   changed_in    for behaviour changes only: the version where it started working differently
+#   explanation   plain English: what happened and why it matters
+#   fix           plain English: what to do instead
+#   source        the official page to check this against
+#   as_of         the date this rule was last reviewed
+#   verification  "verified" only when checked against the official release notes or documentation;
+#                 otherwise "unverified"
+#   basis         where the claim came from: "owner" (told to us by the owner of the set-up),
+#                 "search-summary" (a web-search summary of the official page or community posts,
+#                 not the page itself), or "author-memory" (the tool author's own knowledge)
+#   basis_note    anything worth knowing about how sure we are
+#
+# How the doctor uses a rule, for the Home Assistant version being checked:
+#   removed_in reached            -> Error
+#   deprecated_in reached         -> Warning
+#   changed_in reached            -> Warning (only where it matters, see "contexts")
+#   none of the above reached yet -> Tidy-up (a heads-up about a future version)
+
+schema: 1
+as_of: "2026-10-28"
+newest_release_known: "2026.10"
+verification_status: >-
+  None of these rules could be checked against home-assistant.io when they were written
+  (28 October 2026): the official site could not be reached from the environment used to
+  write them. Every rule is therefore marked "unverified". The rules marked basis "owner"
+  come from the owner of the set-up; "search-summary" rules come from web-search summaries
+  of the official release notes, changelogs and community posts.
+
+rules:
+  # ------------------------------------------------------------------ 2026 changes
+  - id: legacy-template-entities
+    kind: legacy_template
+    match:
+      domains: [alarm_control_panel, binary_sensor, cover, fan, light, lock, sensor, switch, vacuum, weather]
+    deprecated_in: "2025.12"
+    removed_in: "2026.6"
+    explanation: >-
+      From Home Assistant 2026.6, template entities written the old way (platform: template under
+      sensor:, binary_sensor:, switch: and so on) are no longer supported. They are not created, so
+      anything that uses them sees an entity that doesn't exist.
+    fix: >-
+      Move each one into the template: section, written the current way. A suggested replacement
+      is shown below; check it, then delete the old platform: template block.
+    source: https://www.home-assistant.io/blog/2026/06/03/release-20266/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: owner
+    basis_note: >-
+      Stated by the owner. A search summary of the official 2026.6 changelog agrees (one
+      "Remove legacy ... template entities" change for each of the ten entity types).
+
+  - id: device-tracker-see
+    kind: action
+    match:
+      actions: [device_tracker.see]
+    deprecated_in: "2026.5"
+    removed_in: null
+    planned_removal: "2027.5"
+    explanation: >-
+      The device_tracker.see action is being retired. Template device trackers, added in
+      Home Assistant 2026.6, replace it.
+    fix: >-
+      Create a template device tracker in the template: section (it can use latitude/longitude
+      templates or a list of zones), and remove the device_tracker.see step.
+    fix_if_older_than:
+      version: "2026.6"
+      text: >-
+        Template device trackers arrive in Home Assistant 2026.6. Plan to switch to one when you
+        update, and remove the device_tracker.see step then.
+    source: https://www.home-assistant.io/blog/2026/06/03/release-20266/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: owner
+    basis_note: >-
+      Deprecation stated by the owner. The 2026.5 log warning ("will be removed in Home Assistant
+      Core 2027.5") and the 2026.6 template device tracker come from search summaries.
+
+  - id: mqtt-publish-needs-admin
+    kind: changed
+    match:
+      actions: [mqtt.publish]
+      contexts: [script]
+    changed_in: "2026.10"
+    explanation: >-
+      From Home Assistant 2026.10, sending an MQTT message by hand (mqtt.publish) needs an
+      administrator. Automations that start by themselves are not affected, but if someone who
+      isn't an administrator runs this script (for example from a dashboard button), the step fails.
+    fix: >-
+      Make sure only administrator accounts run this script, or start it from an automation instead.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: owner
+
+  - id: mqtt-dump-needs-admin
+    kind: changed
+    match:
+      actions: [mqtt.dump]
+      contexts: [script]
+    changed_in: "2026.10"
+    explanation: >-
+      From Home Assistant 2026.10, mqtt.dump needs an administrator. If someone who isn't an
+      administrator runs this script, the step fails.
+    fix: Make sure only administrator accounts run this script.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+
+  - id: synology-reboot-needs-admin
+    kind: changed
+    match:
+      actions: [synology_dsm.reboot]
+      contexts: [script]
+    changed_in: "2026.10"
+    explanation: >-
+      From Home Assistant 2026.10, restarting a Synology NAS (synology_dsm.reboot) needs an
+      administrator. If someone who isn't an administrator runs this script, the step fails.
+    fix: Make sure only administrator accounts run this script.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: owner
+
+  - id: synology-shutdown-needs-admin
+    kind: changed
+    match:
+      actions: [synology_dsm.shutdown]
+      contexts: [script]
+    changed_in: "2026.10"
+    explanation: >-
+      From Home Assistant 2026.10, shutting down a Synology NAS (synology_dsm.shutdown) needs an
+      administrator. If someone who isn't an administrator runs this script, the step fails.
+    fix: Make sure only administrator accounts run this script.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+
+  - id: removed-integrations-2026-10
+    kind: integration
+    match:
+      names: [dublin_bus_transport, etherscan, raincloud, oru, sigfox, solaredge_local, travisci, zestimate]
+    deprecated_in: null
+    removed_in: "2026.10"
+    explanation: >-
+      This integration was removed from Home Assistant in 2026.10, so this part of the
+      configuration does nothing any more and will show an error.
+    fix: Delete this section (and anything that uses its entities), or find a replacement integration.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+    basis_note: >-
+      The list (Dublin Bus, Etherscan, Melnor RainCloud, Orange and Rockland Utility, Sigfox,
+      SolarEdge Local, Travis-CI, Zestimate) comes from search summaries of the 2026.10 release
+      coverage. The YAML names used to spot them are from the author's memory.
+
+  - id: disabled-integrations-2026-10
+    kind: integration
+    match:
+      names: [linode, tank_utility]
+    deprecated_in: null
+    removed_in: "2026.10"
+    explanation: >-
+      This integration was switched off in Home Assistant 2026.10 and no longer starts, so this
+      part of the configuration does nothing any more.
+    fix: Delete this section (and anything that uses its entities), or find a replacement integration.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+
+  - id: vlc-removed
+    kind: integration
+    match:
+      names: [vlc]
+    deprecated_in: null
+    removed_in: "2026.9"
+    explanation: >-
+      The VLC media player integration (platform: vlc) was removed in Home Assistant 2026.9.
+      The separate "VLC media player via Telnet" integration is not affected.
+    fix: >-
+      Delete this block. If you still use VLC, set up "VLC media player via Telnet" from
+      Settings > Devices & services instead.
+    source: https://www.home-assistant.io/changelogs/core-2026.9/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+    basis_note: A search summary of the official 2026.9 changelog lists "Remove VLC integration".
+
+  - id: influxdb-yaml-connection
+    kind: option
+    match:
+      section: influxdb
+      options: [api_version, host, port, ssl, verify_ssl, ssl_ca_cert]
+    deprecated_in: "2026.3"
+    removed_in: "2026.9"
+    explanation: >-
+      The InfluxDB connection settings (address, port and so on) are no longer read from
+      configuration.yaml. They were copied into the Home Assistant screens automatically when
+      the change was announced. Settings such as include, exclude and tags can stay in YAML.
+    fix: >-
+      Check the connection under Settings > Devices & services > InfluxDB, then delete these
+      connection lines from configuration.yaml.
+    source: https://www.home-assistant.io/integrations/influxdb/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+    basis_note: >-
+      From community posts quoting Home Assistant's own warning; the exact list of connection
+      settings may be longer.
+
+  - id: light-color-temp-mireds
+    kind: action_data
+    match:
+      actions: [light.turn_on, light.toggle]
+      data: [color_temp]
+    deprecated_in: null
+    removed_in: "2026.3"
+    explanation: >-
+      Setting a light's colour temperature in "mireds" (color_temp) was removed in Home
+      Assistant 2026.3. Only Kelvin is accepted now.
+    fix: Use color_temp_kelvin instead. To convert, divide 1,000,000 by the mired value (370 mireds is about 2700 K).
+    source: https://www.home-assistant.io/changelogs/core-2026.3/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+
+  - id: light-kelvin-option
+    kind: action_data
+    match:
+      actions: [light.turn_on, light.toggle]
+      data: [kelvin]
+    deprecated_in: null
+    removed_in: "2026.3"
+    explanation: >-
+      The old kelvin option for lights was retired along with mireds. Only color_temp_kelvin is
+      accepted now.
+    fix: Rename kelvin to color_temp_kelvin.
+    source: https://www.home-assistant.io/integrations/light/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+    basis_note: The author recalls kelvin and color_temp being retired together; the version is assumed.
+
+  - id: snapcast-grouping-actions
+    kind: action
+    match:
+      actions: [snapcast.join, snapcast.unjoin]
+    deprecated_in: null
+    removed_in: "2026.3"
+    explanation: >-
+      Snapcast's own grouping actions were removed in Home Assistant 2026.3.
+    fix: Use media_player.join and media_player.unjoin instead.
+    source: https://www.home-assistant.io/changelogs/core-2026.3/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: search-summary
+    basis_note: >-
+      A search summary of the 2026.3 changelog mentions removing Snapcast's "custom grouping
+      services"; the action names are from the author's memory.
+
+  # ------------------------------------------------------------------ older changes (author's memory)
+  # Versions below are the author's best recollection and mean "no later than"; they only matter
+  # for very old installations. All of these are long gone by 2026.
+
+  - id: old-zwave
+    kind: integration
+    match:
+      names: [zwave, ozw]
+    deprecated_in: null
+    removed_in: "2022.1"
+    explanation: The old Z-Wave and OpenZWave integrations were removed years ago.
+    fix: Use Z-Wave JS (Settings > Devices & services), then delete this section.
+    source: https://www.home-assistant.io/integrations/zwave_js/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: old-housekeeping-integrations
+    kind: integration
+    match:
+      names: [introduction, discovery, updater]
+    deprecated_in: null
+    removed_in: "2023.1"
+    explanation: >-
+      This integration was removed: Home Assistant now finds devices and tells you about
+      updates by itself.
+    fix: Delete this line from configuration.yaml.
+    source: https://www.home-assistant.io/integrations/default_config/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: map-panel
+    kind: integration
+    match:
+      names: [map]
+    deprecated_in: "2024.12"
+    removed_in: null
+    explanation: 'The map: line is no longer needed; the map is a dashboard now.'
+    fix: 'Delete the map: line and add a Map card or Map dashboard instead.'
+    source: https://www.home-assistant.io/dashboards/map/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: platform-mqtt
+    kind: platform
+    match:
+      platforms: [mqtt]
+    deprecated_in: null
+    removed_in: "2022.12"
+    explanation: 'Writing MQTT entities as "platform: mqtt" under sensor:, switch: and so on was removed.'
+    fix: 'Put them under the mqtt: section instead (mqtt: > sensor: > - name: …).'
+    source: https://www.home-assistant.io/integrations/mqtt/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: platform-command-line
+    kind: platform
+    match:
+      platforms: [command_line]
+    deprecated_in: "2023.6"
+    removed_in: "2023.12"
+    explanation: 'Writing command line entities as "platform: command_line" was removed.'
+    fix: 'Put them under the command_line: section instead.'
+    source: https://www.home-assistant.io/integrations/command_line/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: platforms-moved-to-screens
+    kind: platform
+    match:
+      platforms: [ping, systemmonitor, time_date, workday, uptime, version, season, moon, google_translate]
+    deprecated_in: "2024.1"
+    removed_in: null
+    explanation: >-
+      This is now set up in the Home Assistant screens rather than in YAML. The YAML version
+      was copied into the screens automatically when the change happened, and may already have
+      stopped being read.
+    fix: Check it under Settings > Devices & services, then delete this block.
+    source: https://www.home-assistant.io/integrations/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+    basis_note: These moved at different times; the version is the earliest the author recalls.
+
+  - id: entity-namespace
+    kind: platform_option
+    match:
+      options: [entity_namespace]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: entity_namespace was removed.
+    fix: Delete the entity_namespace line.
+    source: https://www.home-assistant.io/docs/configuration/platform_options/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: whitelist-external-dirs
+    kind: option
+    match:
+      section: homeassistant
+      options: [whitelist_external_dirs]
+    deprecated_in: "2020.12"
+    removed_in: null
+    explanation: whitelist_external_dirs was renamed.
+    fix: Rename it to allowlist_external_dirs.
+    source: https://www.home-assistant.io/integrations/homeassistant/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: legacy-templates-option
+    kind: option
+    match:
+      section: homeassistant
+      options: [legacy_templates]
+    deprecated_in: null
+    removed_in: "2021.10"
+    explanation: legacy_templates was removed.
+    fix: Delete the line.
+    source: https://www.home-assistant.io/integrations/homeassistant/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: http-old-options
+    kind: option
+    match:
+      section: http
+      options: [base_url, api_password, trusted_networks]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: These settings were removed from http:. (Any value is hidden in this report.)
+    fix: >-
+      Set the addresses under Settings > System > Network, use normal logins instead of
+      api_password, and delete these lines.
+    source: https://www.home-assistant.io/integrations/http/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: recorder-purge-interval
+    kind: option
+    match:
+      section: recorder
+      options: [purge_interval]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: purge_interval was removed from recorder:.
+    fix: Use auto_purge (on by default) and purge_keep_days, and delete the line.
+    source: https://www.home-assistant.io/integrations/recorder/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: frontend-javascript-version
+    kind: option
+    match:
+      section: frontend
+      options: [javascript_version]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: javascript_version was removed from frontend:.
+    fix: Delete the line.
+    source: https://www.home-assistant.io/integrations/frontend/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: mqtt-broker-yaml
+    kind: option
+    match:
+      section: mqtt
+      options: [broker, port, username, password, client_id, keepalive, certificate, client_key, client_cert,
+                tls_insecure, protocol, discovery, discovery_prefix, birth_message, will_message]
+    deprecated_in: null
+    removed_in: "2023.1"
+    explanation: The connection settings for MQTT are no longer read from YAML. (Any values are hidden in this report.)
+    fix: Set the connection in Settings > Devices & services > MQTT > Configure, then delete these lines.
+    source: https://www.home-assistant.io/integrations/mqtt/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: automation-hide-entity
+    kind: automation_option
+    match:
+      options: [hide_entity]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: hide_entity was removed, and Home Assistant rejects automations that still have it.
+    fix: Delete the hide_entity line.
+    source: https://www.home-assistant.io/docs/automation/yaml/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: weather-get-forecast
+    kind: action
+    match:
+      actions: [weather.get_forecast]
+    deprecated_in: "2023.12"
+    removed_in: "2024.6"
+    explanation: weather.get_forecast (without an s) was removed.
+    fix: Use weather.get_forecasts (with an s); its result is grouped by entity.
+    source: https://www.home-assistant.io/integrations/weather/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: weather-forecast-attribute
+    kind: template_attribute
+    match:
+      domains: [weather]
+      attributes: [forecast]
+    deprecated_in: "2023.9"
+    removed_in: "2024.3"
+    explanation: Weather entities no longer have a "forecast" attribute.
+    fix: Use the weather.get_forecasts action with response_variable, and read the forecast from that.
+    source: https://www.home-assistant.io/integrations/weather/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: climate-aux-heat
+    kind: action
+    match:
+      actions: [climate.set_aux_heat]
+    deprecated_in: "2024.4"
+    removed_in: "2024.10"
+    explanation: climate.set_aux_heat was removed ("auxiliary heat" is no longer part of climate devices).
+    fix: Use a switch or the device's own option instead, and remove this step.
+    source: https://www.home-assistant.io/integrations/climate/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: group-set-visibility
+    kind: action
+    match:
+      actions: [group.set_visibility]
+    deprecated_in: null
+    removed_in: "2021.1"
+    explanation: group.set_visibility was removed long ago.
+    fix: Remove this step.
+    source: https://www.home-assistant.io/integrations/group/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+  - id: light-white-value
+    kind: action_data
+    match:
+      actions: [light.turn_on, light.toggle]
+      data: [white_value]
+    deprecated_in: null
+    removed_in: "2022.9"
+    explanation: white_value was removed from lights.
+    fix: Use white or rgbw_color instead.
+    source: https://www.home-assistant.io/integrations/light/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: author-memory
+
+# Things that are still supported. The doctor must never report these as retired;
+# the tests check it.
+still_supported:
+  - id: yaml-trigger-ids
+    what: 'id on triggers, and "condition: trigger" checks, written in YAML'
+    note: >-
+      Home Assistant 2026.10 added a way to pick triggers in the editor's "Triggered by"
+      condition, which manages trigger IDs for you. Trigger IDs written in YAML keep working
+      exactly as before.
+    source: https://www.home-assistant.io/blog/2026/10/07/release-202610/
+    as_of: "2026-10-28"
+    verification: unverified
+    basis: owner
+
+# How to rewrite an old "platform: template" entity in the template: section.
+# Used to show a suggested replacement. Option names not listed are copied as they are.
+legacy_template_conversion:
+  source: https://www.home-assistant.io/integrations/template/
+  as_of: "2026-10-28"
+  verification: unverified
+  basis: author-memory
+  basis_note: >-
+    default_entity_id, unique_id, name and state were named by the owner; a search summary of
+    the template documentation agrees that default_entity_id takes a full entity id (such as
+    sensor.outside) and is only used when the entity is first created. The other names are
+    from the author's memory of the official migration guide.
+  plural_keys:
+    sensor: sensors
+    binary_sensor: sensors
+    switch: switches
+    light: lights
+    cover: covers
+    fan: fans
+    vacuum: vacuums
+    alarm_control_panel: panels
+  common:
+    friendly_name: name
+    friendly_name_template: name
+    value_template: state
+    icon_template: icon
+    entity_picture_template: picture
+    availability_template: availability
+    attribute_templates: attributes
+  by_domain:
+    light:
+      level_template: level
+      temperature_template: temperature
+      hs_template: hs
+      color_template: hs
+      rgb_template: rgb
+      rgbw_template: rgbw
+      rgbww_template: rgbww
+      effect_list_template: effect_list
+      effect_template: effect
+      supports_transition_template: supports_transition
+    cover:
+      position_template: position
+      tilt_template: tilt
+    fan:
+      percentage_template: percentage
+      preset_mode_template: preset_mode
+      oscillating_template: oscillating
+      direction_template: direction
+    vacuum:
+      battery_level_template: battery_level
+      fan_speed_template: fan_speed
+    lock:
+      code_format_template: code_format
+  dropped: [entity_id]
+
+# Seen while researching 2026.1 to 2026.10, but not turned into rules because they can't be
+# spotted reliably in YAML files or the details weren't clear enough. Kept here as notes.
+leads:
+  - "2026.3: Tado mobile device tracking removed (those device_tracker entities disappear; the entity cross-check finds any that are still used)."
+  - "2026.3: Z-Wave fan percentage speeds corrected."
+  - "2026.6: default Bluetooth scanning mode changed from Active to Auto."
+  - "2026.7: battery_level attribute removed from iCloud device trackers; device tracker battery_level being retired generally."
+  - "2026.8: new installations use port 80 instead of 8123 (existing ones keep their port)."
+  - "2026.10: built-in login provider's legacy mode removed; usernames are now lower case without spaces at the ends."
+  - "2026.10: stricter validation of state conditions reported by users (one report: 'for' with a list of states)."
+  - "2026.10: Telegram bot download_file needs an allow-list of folders."

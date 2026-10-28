@@ -10,6 +10,13 @@ goodnight_lights:
     - action: lock.lock
       target:
         entity_id: lock.front_door
+announce_on_screen:
+  alias: Send a message to the hall display
+  sequence:
+    - action: mqtt.publish
+      data:
+        topic: example/hall_display/message
+        payload: Dinner is ready
 morning_wait:
   alias: Wait for sunrise
   sequence:

@@ -184,18 +184,23 @@ _check("old-service-key", TIDY, OLD, "Old name: service: in an action",
 _check("old-data-template", TIDY, OLD, "Old names: data_template / service_template",
        "Templates have been allowed directly in data: and action: for years, so data_template: and service_template: are no longer needed.",
        "Rename data_template: to data: and service_template: to action:. Tidy mode does this for you.", tidy_fixes=True)
-_check("removed-integration", ERROR, OLD, "An integration that no longer exists",
-       "This section of configuration.yaml sets up something that has been removed from Home Assistant. It does nothing now and may show an error.",
-       "Follow the suggestion in the details, then delete the section.")
-_check("deprecated-integration", WARNING, OLD, "Set up the old way",
-       "This is set up in YAML in a way Home Assistant has retired or is retiring. It may already have been moved into the Home Assistant screens for you, or it may stop working in a future update.",
+# These five come from the rules in data/ha_rules.yaml. Whether each finding is an Error, a Warning
+# or a Tidy-up depends on the Home Assistant version being checked (see that file).
+_check("retired-integration", WARNING, OLD, "An integration that has been removed or is being retired",
+       "Home Assistant removes integrations from time to time, or moves their set-up into its screens. Removed ones do nothing and show an error; ones being retired still work for now. The details say which version does what, and where that information comes from.",
        "Follow the suggestion in the details.")
-_check("deprecated-option", WARNING, OLD, "An old or retired setting",
-       "This setting has been renamed or retired in recent versions of Home Assistant.",
+_check("retired-setting", WARNING, OLD, "A setting that has been removed or is being retired",
+       "Home Assistant has removed, renamed or is retiring this setting. Removed settings are ignored or stop the section loading. The details say which version does what, and where that information comes from.",
        "Follow the suggestion in the details.")
-_check("legacy-template-entity", ERROR, OLD, "Template sensor written the old way (platform: template)",
-       "The old style of template sensor (platform: template under sensor:, binary_sensor: and so on) was marked for retirement in late 2025 and is due to stop working during 2026. On Home Assistant 2026.10 these entities may already have disappeared.",
-       "Move it into the template: section, written the new way. The Home Assistant documentation for \"Template\" shows both styles side by side.")
+_check("retired-action", WARNING, OLD, "An action that has been removed or is being retired",
+       "This step uses an action (or an option of an action) that Home Assistant has removed or is retiring. A removed one makes the step fail. The details say which version does what, and where that information comes from.",
+       "Follow the suggestion in the details.")
+_check("behaviour-change", WARNING, OLD, "Works differently in your version",
+       "Home Assistant changed how this works. It isn't broken, but it may not do what you expect in the situation the details describe.",
+       "Follow the suggestion in the details.")
+_check("legacy-template-entity", ERROR, OLD, "Template entity written the old way (platform: template)",
+       "Template entities written the old way (platform: template under sensor:, binary_sensor:, switch: and so on) are no longer supported by recent versions of Home Assistant. The details say which version removed them and show a suggested replacement written the current way.",
+       "Move each one into the template: section using the suggested replacement, check it, then delete the old block.")
 
 # ---------------------------------------------------------------- timing and repeats
 _check("single-mode-wait", WARNING, TIMING, "A wait or delay in a \"single\" automation drops new triggers",
@@ -388,6 +393,11 @@ class Finding:
     where: str
     detail: str
     fix: str = ""
+    rule_id: str = ""  # set when the finding comes from a rule in data/ha_rules.yaml
+    when: str = ""  # which Home Assistant versions are affected, in plain English
+    source: str = ""  # the official page to check it against
+    provenance: str = ""  # whether the rule has been checked, and where it came from
+    example: str = ""  # a suggested replacement, shown as it would be typed
 
     @property
     def check(self) -> Check:
@@ -412,11 +422,13 @@ class Findings:
         self.items: list[Finding] = []
         self._seen: set[tuple] = set()
 
-    def add(self, code: str, file: str, line: int, detail: str, where: str = "", fix: str = "", severity: str | None = None) -> None:
+    def add(self, code: str, file: str, line: int, detail: str, where: str = "", fix: str = "", severity: str | None = None,
+            rule_id: str = "", when: str = "", source: str = "", provenance: str = "", example: str = "") -> None:
         meta = CHECKS[code]
         sev = severity or meta.severity
         assert sev in SEVERITIES, sev
-        finding = Finding(code, sev, file or "", int(line or 0), redact_text(where), redact_text(detail), redact_text(fix))
+        finding = Finding(code, sev, file or "", int(line or 0), redact_text(where), redact_text(detail), redact_text(fix),
+                          rule_id, redact_text(when), source, redact_text(provenance), redact_text(example))
         key = (finding.code, finding.file, finding.line, finding.detail, finding.where)
         if key in self._seen:
             return

@@ -13,6 +13,7 @@ from typing import Any, Iterator
 from .catalog import Findings
 from .configtree import ConfigSet
 from .registry import Registry
+from .rules import Rule, RuleBook, judge
 from .templates import analyse
 from .util import (
     HELPER_DOMAINS, KNOWN_DOMAINS, REGISTRY_ID_RE, as_list, entity_ids_in, is_template,
@@ -22,7 +23,7 @@ from .yamlio import HATag, LList, LMap, LStr
 
 TEMPLATE_ENTITY_DOMAINS = (
     "sensor", "binary_sensor", "button", "image", "light", "lock", "number", "select", "switch",
-    "weather", "fan", "cover", "vacuum", "alarm_control_panel", "event", "update",
+    "weather", "fan", "cover", "vacuum", "alarm_control_panel", "event", "update", "device_tracker",
 )
 LEGACY_TEMPLATE_KEYS = {
     "sensor": "sensors", "binary_sensor": "sensors", "switch": "switches", "light": "lights",
@@ -206,6 +207,8 @@ class Model:
     config: ConfigSet
     registry: Registry
     findings: Findings
+    rules: RuleBook | None = None
+    version: tuple[int, int, int] | None = None
     sections: dict[str, list[Section]] = field(default_factory=dict)
     automations: list[Automation] = field(default_factory=list)
     scripts: list[Script] = field(default_factory=list)
@@ -220,6 +223,9 @@ class Model:
     templates: list[TemplateUse] = field(default_factory=list)
     service_refs: list[ServiceRef] = field(default_factory=list)
     device_refs: list[DeviceRef] = field(default_factory=list)
+    # entities that only came from something Home Assistant has removed (for the version checked)
+    retired_defined: dict[str, tuple[Definition, Rule]] = field(default_factory=dict)
+    _retiring: Rule | None = None
 
     # ------------------------------------------------------------------ building
     def build(self) -> "Model":
@@ -305,7 +311,27 @@ class Model:
                     self.scenes.append(item)
 
     def _define(self, entity_id: str, file: str, line: int, how: str = "yaml") -> None:
+        if self._retiring is not None:
+            self.retired_defined.setdefault(entity_id, (Definition(entity_id, file, line, how), self._retiring))
+            return
         self.defined.setdefault(entity_id, Definition(entity_id, file, line, how))
+
+    def removed_platform_rule(self, domain: str, platform: Any) -> Rule | None:
+        """The rule that says this platform no longer exists in the version being checked, if any."""
+
+        if self.rules is None or self.version is None or not isinstance(platform, str):
+            return None
+        for rule in self.rules.rules:
+            match = rule.match
+            hit = (
+                (rule.kind == "legacy_template" and platform == "template" and domain in as_list(match.get("domains")))
+                or (rule.kind == "platform" and platform in as_list(match.get("platforms"))
+                    and (not match.get("domains") or domain in as_list(match.get("domains"))))
+                or (rule.kind == "integration" and platform in as_list(match.get("names")))
+            )
+            if hit and judge(rule, self.version).status == "removed":
+                return rule
+        return None
 
     def _collect_helpers_and_entities(self) -> None:
         reg = self.registry
@@ -408,7 +434,7 @@ class Model:
         name = item.get("name")
         if isinstance(name, str) and name and not is_template(name) and "device" not in item:
             self._define(f"{domain}.{slugify(name)}", item.file, item.line)
-        else:
+        elif self._retiring is None:
             self.unpredictable_domains.add(domain)
 
     def _collect_template_entities(self) -> None:
@@ -430,19 +456,27 @@ class Model:
                     platform = item.get("platform")
                     if isinstance(platform, str):
                         self.platform_entries.append((domain, item, section.package))
-                    if platform == "template":
-                        plural = LEGACY_TEMPLATE_KEYS.get(domain)
-                        named = item.get(plural) if plural else None
-                        if isinstance(named, LMap):
-                            for key in named:
-                                self._define(f"{domain}.{key}", named.file, named.key_line(key))
-                        else:
-                            self._entity_from_config(domain, item)
-                    elif domain == "notify":
-                        name = item.get("name")
-                        self.services.add(f"notify.{slugify(name) if isinstance(name, str) else 'notify'}")
-                    elif domain not in ("tts", "stt"):
-                        self._entity_from_config(domain, item)
+                    self._retiring = self.removed_platform_rule(domain, platform)
+                    self._platform_entity(domain, item, platform)
+                    self._retiring = None
+        self._collect_yaml_integration_entities()
+
+    def _platform_entity(self, domain: str, item: LMap, platform: Any) -> None:
+        if platform == "template":
+            plural = LEGACY_TEMPLATE_KEYS.get(domain)
+            named = item.get(plural) if plural else None
+            if isinstance(named, LMap):
+                for key in named:
+                    self._define(f"{domain}.{key}", named.file, named.key_line(key))
+            else:
+                self._entity_from_config(domain, item)
+        elif domain == "notify":
+            name = item.get("name")
+            self.services.add(f"notify.{slugify(name) if isinstance(name, str) else 'notify'}")
+        elif domain not in ("tts", "stt"):
+            self._entity_from_config(domain, item)
+
+    def _collect_yaml_integration_entities(self) -> None:
         for section in self.section_list("mqtt"):
             if isinstance(section.value, LMap):
                 for domain, items in section.value.items():

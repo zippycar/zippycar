@@ -47,7 +47,7 @@ class TemplateInfo:
     direct_state: list[str] = field(default_factory=list)
     trigger_attrs: set[str] = field(default_factory=set)
     trigger_guarded: bool = False
-    forecast_attribute: bool = False
+    attribute_refs: list[tuple[str, str]] = field(default_factory=list)  # (entity id, attribute name)
     uses_now: bool = False
 
 
@@ -158,10 +158,10 @@ def _walk(node: nodes.Node, parent: nodes.Node | None, info: TemplateInfo) -> No
                 values = [item.value for item in first.items if isinstance(item, nodes.Const) and isinstance(item.value, str)]
             for value in values:
                 info.entity_refs.append((value, name))
-            if name == "state_attr" and len(node.args) > 1:
+            if name in ("state_attr", "is_state_attr") and len(node.args) > 1:
                 second = node.args[1]
-                if isinstance(second, nodes.Const) and second.value == "forecast":
-                    info.forecast_attribute = True
+                if isinstance(second, nodes.Const) and isinstance(second.value, str):
+                    info.attribute_refs.extend((value, second.value) for value in values)
     elif isinstance(node, nodes.Getattr):
         entity = _states_chain(node)
         if entity:
@@ -173,8 +173,10 @@ def _walk(node: nodes.Node, parent: nodes.Node | None, info: TemplateInfo) -> No
                 info.trigger_guarded = True
             else:
                 info.trigger_attrs.add(node.attr)
-        if node.attr == "forecast" and isinstance(node.node, nodes.Getattr) and node.node.attr == "attributes":
-            info.forecast_attribute = True
+        if isinstance(node.node, nodes.Getattr) and node.node.attr == "attributes":
+            owner = _states_chain(node.node.node) or _states_item(node.node.node)
+            if owner:
+                info.attribute_refs.append((owner, node.attr))
     elif isinstance(node, nodes.Getitem):
         entity = _states_item(node)
         if entity:

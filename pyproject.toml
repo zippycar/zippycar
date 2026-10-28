@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ha-config-doctor"
-version = "1.0.0"
+version = "1.1.0"
 description = "A careful, read-only health check for Home Assistant configuration folders and automations."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -21,8 +21,14 @@ test = ["pytest>=7"]
 [project.scripts]
 ha-config-doctor = "ha_config_doctor.cli:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+# The rules about removed and retired features live in data/ at the top of the project,
+# and are installed inside the package as ha_config_doctor/data/ha_rules.yaml.
+package-dir = {"" = "src", "ha_config_doctor.data" = "data"}
+packages = ["ha_config_doctor", "ha_config_doctor.checks", "ha_config_doctor.data"]
+
+[tool.setuptools.package-data]
+"ha_config_doctor.data" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

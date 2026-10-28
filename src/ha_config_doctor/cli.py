@@ -46,6 +46,29 @@ def _say_counts(findings) -> None:
     print(f"Result: {counts[ERROR]} Error(s), {counts[WARNING]} Warning(s), {counts[TIDY]} Tidy-up(s).")
 
 
+def _examine(root: Path, args: argparse.Namespace):
+    from .doctor import examine
+    from .rules import RulesProblem
+
+    rules_file = _clean_path(args.rules) if getattr(args, "rules", None) else None
+    try:
+        return examine(root, ha_version=getattr(args, "ha_version", None), rules_file=rules_file)
+    except RulesProblem as err:
+        print(str(err))
+        return None
+
+
+def _say_version(result) -> None:
+    version = result.version
+    if version.source == "assumed":
+        print(f"No .HA_VERSION file was found, so Home Assistant {version.text} is assumed "
+              "(add --ha-version 2026.10.4, for example, to say which version you have).")
+    else:
+        print(f"Checked against Home Assistant {version.text}.")
+    if version.newer_than_rules:
+        print("Your Home Assistant is newer than the doctor's rules, so very recent changes may be missing.")
+
+
 def _prepare_output() -> None:
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -55,7 +78,6 @@ def _prepare_output() -> None:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
-    from .doctor import examine
     from .report import write_reports
 
     root = _config_folder(args.config_folder)
@@ -68,7 +90,9 @@ def cmd_check(args: argparse.Namespace) -> int:
         return EXIT_PROBLEM
     print(f"ha-config-doctor {__version__}")
     print(f'Looking at "{root.name}" (read-only: nothing in that folder will be changed)...')
-    result = examine(root)
+    result = _examine(root, args)
+    if result is None:
+        return EXIT_PROBLEM
     model = result.model
     print(f"Read {len(result.config.files)} file(s): {len(model.automations)} automation(s), "
           f"{len(model.scripts)} script(s), {len(model.helpers)} helper(s).")
@@ -76,6 +100,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         print("Home Assistant's entity list (.storage) was found, so every entity name was cross-checked.")
     else:
         print("No .storage folder with an entity list was found, so entity names were only partly checked.")
+    _say_version(result)
     _say_counts(result.findings)
     if result.unfinished:
         print("Note: some checks couldn't finish because of a problem in the doctor itself (not in your files). "
@@ -97,7 +122,6 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_tidy(args: argparse.Namespace) -> int:
-    from .doctor import examine
     from .report import write_change_log
     from .tidy import OutputFolderProblem, check_output_folder, tidy
 
@@ -112,7 +136,9 @@ def cmd_tidy(args: argparse.Namespace) -> int:
         return EXIT_PROBLEM
     print(f"ha-config-doctor {__version__}")
     print(f'Reading "{root.name}" (read-only: nothing in that folder will be changed)...')
-    result = examine(root)
+    result = _examine(root, args)
+    if result is None:
+        return EXIT_PROBLEM
     try:
         report = tidy(result, out, keep_order=args.keep_order)
         html_path, md_path = write_change_log(report, result)
@@ -135,6 +161,29 @@ def cmd_tidy(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_list_rules(args: argparse.Namespace) -> int:
+    from .rules import RulesProblem, judge, load_rules, parse_version
+
+    try:
+        book = load_rules(_clean_path(args.rules) if args.rules else None)
+    except RulesProblem as err:
+        print(str(err))
+        return EXIT_PROBLEM
+    version = parse_version(args.ha_version) if args.ha_version else book.newest_release_known
+    if version is None:
+        print(f'"{args.ha_version}" isn\'t a Home Assistant version. Write it like 2026.10.4.')
+        return EXIT_PROBLEM
+    print(f"Rules file: {book.path}")
+    print(f"Last reviewed {book.as_of}; {len(book.unverified)} of {len(book.rules)} rules not yet checked against the official release notes.")
+    for rule in book.rules:
+        verdict = judge(rule, version)
+        print(f"\n[{verdict.severity}] {rule.id} ({rule.verification}, from {rule.basis})")
+        print(f"    {verdict.when}")
+        print(f"    {rule.explanation}")
+        print(f"    Source: {rule.source}")
+    return EXIT_OK
+
+
 def cmd_list_checks(args: argparse.Namespace) -> int:
     from .report import checks_markdown
 
@@ -149,6 +198,12 @@ def cmd_list_checks(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _version_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--ha-version", metavar="VERSION",
+                        help="the Home Assistant version to check against, such as 2026.10.4 (default: read from the folder's .HA_VERSION file)")
+    parser.add_argument("--rules", metavar="FILE", help="use a different rules file instead of the built-in data/ha_rules.yaml")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ha-config-doctor",
@@ -161,6 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("config_folder", help='the folder that holds configuration.yaml, in "double quotes"')
     check.add_argument("--report-folder", help=f'where to save the report (default: a folder called "{DEFAULT_REPORT_FOLDER}" here)')
     check.add_argument("--open", action="store_true", help="open the report in your web browser when it's ready")
+    _version_options(check)
     check.set_defaults(func=cmd_check)
 
     tidy = sub.add_parser("tidy", help="write a tidied COPY of the files into a new folder")
@@ -168,7 +224,12 @@ def build_parser() -> argparse.ArgumentParser:
     tidy.add_argument("output_folder", help="a NEW (or empty) folder for the tidied copies")
     tidy.add_argument("--keep-order", action="store_true", help="don't change the order of anything")
     tidy.add_argument("--open", action="store_true", help="open the change log in your web browser")
+    _version_options(tidy)
     tidy.set_defaults(func=cmd_tidy)
+
+    rules = sub.add_parser("list-rules", help="list the rules about removed and retired features, and what they mean for a version")
+    _version_options(rules)
+    rules.set_defaults(func=cmd_list_rules)
 
     listing = sub.add_parser("list-checks", help="list every check the doctor makes")
     listing.add_argument("--markdown", action="store_true", help="print the full descriptions as Markdown")

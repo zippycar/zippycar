@@ -9,7 +9,15 @@ It can also make a **tidied copy** of your files in a new folder, with a list of
 
 **It never changes your files.** It only reads them.
 
-Written for Home Assistant OS on a Raspberry Pi, version 2026.10, looked at from a Windows 11 PC.
+Written for Home Assistant OS on a Raspberry Pi (tested against Core 2026.10.4), looked at from a
+Windows 11 PC.
+
+> **Important — how up to date its knowledge is.** What the doctor knows about features Home Assistant
+> has removed or retired is kept in one file, [`data/ha_rules.yaml`](data/ha_rules.yaml), with the
+> version and source of every rule. When those rules were written (28 October 2026),
+> **home-assistant.io could not be reached**, so **none of them could be checked against the official
+> release notes**. Every rule is marked **"unverified"**, and the report says so next to each finding
+> that comes from one. See [How up to date are the rules?](#how-up-to-date-are-the-rules)
 
 ---
 
@@ -20,12 +28,14 @@ Written for Home Assistant OS on a Raspberry Pi, version 2026.10, looked at from
 3. [Setting it up (once)](#setting-it-up-once)
 4. [Checking your configuration](#checking-your-configuration)
 5. [Reading the report](#reading-the-report)
-6. [Making a tidied copy (optional)](#making-a-tidied-copy-optional)
-7. [Putting tidied files back into Home Assistant](#putting-tidied-files-back-into-home-assistant)
-8. [If something goes wrong](#if-something-goes-wrong)
-9. [Updating or removing it](#updating-or-removing-it)
-10. [A few words explained](#a-few-words-explained)
-11. [For helpers and developers](#for-helpers-and-developers)
+6. [Which Home Assistant version it checks against](#which-home-assistant-version-it-checks-against)
+7. [How up to date are the rules?](#how-up-to-date-are-the-rules)
+8. [Making a tidied copy (optional)](#making-a-tidied-copy-optional)
+9. [Putting tidied files back into Home Assistant](#putting-tidied-files-back-into-home-assistant)
+10. [If something goes wrong](#if-something-goes-wrong)
+11. [Updating or removing it](#updating-or-removing-it)
+12. [A few words explained](#a-few-words-explained)
+13. [For helpers and developers](#for-helpers-and-developers)
 
 ---
 
@@ -43,7 +53,10 @@ Written for Home Assistant OS on a Raspberry Pi, version 2026.10, looked at from
   * triggers that fire **hundreds of times a day**, or when a device **drops offline**;
   * **templates** (the bits in `{{ }}`) that break when a device is unavailable;
   * names of scripts, scenes, helpers and devices that **point at nothing**;
-  * **old ways of writing** things that Home Assistant has replaced or retired;
+  * **features Home Assistant has removed or is retiring** — for example old-style template sensors
+    (removed in 2026.6), with a suggested replacement written the current way — judged against
+    **your** version of Home Assistant;
+  * **old ways of writing** things that Home Assistant has replaced;
   * automations that are **too long or too deeply nested** to follow.
 * **Home Assistant's own list of entities and devices** (in the `.storage` folder), so every entity name
   you use is cross-checked: does it exist, is it switched off (disabled), or has its device gone?
@@ -224,6 +237,65 @@ A few things are worth knowing:
   Home Assistant screens might still use it, so check before deleting.
 * Sunrise and sunset times are worked out from your home's location. If the location isn't in the
   copy, the report uses typical times and says so.
+* Findings about removed or retired features also show **which versions** are affected, the
+  **official page** to check, and whether the rule has been **checked** against the official release
+  notes yet (at the moment none have — see below). Old-style template entities come with a
+  **suggested replacement**, ready to compare with what you have.
+
+---
+
+## Which Home Assistant version it checks against
+
+Whether something is a problem can depend on your version of Home Assistant. For example, old-style
+template sensors still worked on 2026.5 but were removed in 2026.6. The doctor treats each rule like this:
+
+| For your version… | It is… |
+|---|---|
+| the feature has been **removed** | an **Error** |
+| the feature has been **marked for retirement** but still works | a **Warning** |
+| it **works differently** now in a way that may catch you out | a **Warning** |
+| none of that has happened **yet** in your version | a **Tidy-up** (a heads-up for later) |
+
+The doctor reads your version from the small `.HA_VERSION` file in the config folder, so normally there
+is nothing to do. If your copy doesn't have that file, the report says which version it assumed. You
+can also say which version you have — you can see it in Home Assistant under **Settings → About**
+("Core"):
+
+```powershell
+py -m ha_config_doctor check "C:\HA Copy\config" --ha-version 2026.10.4 --open
+```
+
+---
+
+## How up to date are the rules?
+
+Everything the doctor knows about removed, retired and changed features is in
+[`data/ha_rules.yaml`](data/ha_rules.yaml). Each rule records the version where the feature was marked
+for retirement, the version where it was removed (or changed), a plain-English explanation and fix, the
+official web page to check it against, and the date it was last reviewed.
+
+**Please read this:** when the rules were written (28 October 2026), the computer they were written on
+was **not allowed to reach home-assistant.io**. So **no rule has been checked against the official
+release notes, breaking-change lists or integration documentation**, and every rule is marked
+**"unverified"**. Each rule also says where its information came from:
+
+* **"owner"** — facts supplied by the owner of this set-up: old-style template entities removed in
+  2026.6, `device_tracker.see` being retired in favour of template device trackers, and, from 2026.10,
+  manual MQTT publishing and Synology restarts needing an administrator (while trigger IDs written in
+  YAML keep working);
+* **"search-summary"** — from web-search summaries of the official 2026.1–2026.10 release notes,
+  changelogs and community posts (not the pages themselves);
+* **"author-memory"** — older changes, from the tool author's own knowledge.
+
+To see every rule, and what it means for a given version:
+
+```powershell
+py -m ha_config_doctor list-rules --ha-version 2026.10.4
+```
+
+The full list is also in [docs/CHECKS.md](docs/CHECKS.md#rules-about-removed-retired-and-changed-features).
+If you or a helper check a rule against the official page, change its `verification` to `verified` in
+`data/ha_rules.yaml` (and correct anything that's wrong) — no program code needs to change.
 
 ---
 
@@ -380,9 +452,10 @@ triggered by the samples; another fails if the healthy sample produces any findi
 ### Commands
 
 ```text
-ha-config-doctor check CONFIG_FOLDER [--report-folder DIR] [--open]
-ha-config-doctor tidy CONFIG_FOLDER OUTPUT_FOLDER [--keep-order] [--open]
+ha-config-doctor check CONFIG_FOLDER [--report-folder DIR] [--open] [--ha-version VERSION] [--rules FILE]
+ha-config-doctor tidy CONFIG_FOLDER OUTPUT_FOLDER [--keep-order] [--open] [--ha-version VERSION] [--rules FILE]
 ha-config-doctor list-checks [--markdown]
+ha-config-doctor list-rules [--ha-version VERSION] [--rules FILE]
 ```
 
 `py -m ha_config_doctor` and `ha-config-doctor` are the same program. Exit codes for `check`: `0` no
@@ -400,12 +473,30 @@ Errors, `1` Errors were found, `2` it couldn't run.
 * `model.py` gathers automations, scripts, scenes, helpers, defined entities and every entity reference.
 * `templates.py` analyses templates with Jinja's own parser.
 * `checks/` holds the checks; `catalog.py` holds every check's title, severity, explanation and fix.
+* `data/ha_rules.yaml` holds every fact about removed, retired and changed features (versions,
+  explanations, sources, verification status). `rules.py` loads and checks it, works out the Home
+  Assistant version (`.HA_VERSION` or `--ha-version`) and turns each rule into an Error, Warning or
+  Tidy-up; `checks/retired.py` finds the matching places. The file is installed inside the package as
+  `ha_config_doctor/data/ha_rules.yaml`. A test fails if a retired feature's name is written into the
+  program code instead.
 * `tidy.py` uses ruamel.yaml to keep comments, applies only behaviour-preserving changes, then re-reads
   the result with the Home Assistant-style loader and compares it with the original (and compares the
   comments). It falls back to a more cautious level, and finally leaves the file alone, if anything
   differs.
 * `report.py` writes the HTML and Markdown reports and the tidy change log; all text passes through
   `redact.py`.
+
+### Adding or correcting a rule about a removed feature
+
+Edit `data/ha_rules.yaml` (the comments at the top explain every field and the kinds of rule), then run
+the tests: one of them builds a small configuration for every rule and checks the rule finds it.
+Regenerate `docs/CHECKS.md` afterwards (below).
+
+### Continuous testing
+
+`.github/workflows/tests.yml` runs the tests on Windows and Ubuntu (Python 3.10 and 3.13), and runs the
+Windows commands from this README exactly as written, in Windows PowerShell 5.1, against a copied config
+folder whose path has a space in it and is typed with a trailing backslash.
 
 ### Adding a check
 

@@ -11,6 +11,7 @@ from ..catalog import Findings
 from ..configtree import ConfigSet
 from ..model import Automation, Model, Script
 from ..registry import Registry
+from ..rules import HAVersion, RuleBook
 from ..util import as_list, entity_ids_in, is_template
 from ..yamlio import HATag, LList, LMap, Raw, to_plain
 
@@ -45,9 +46,12 @@ class Ctx:
     model: Model
     reg: Registry
     findings: Findings
+    rules: RuleBook
+    version: HAVersion
 
-    def add(self, code: str, file: str, line: int, detail: str, where: str = "", fix: str = "", severity: str | None = None) -> None:
-        self.findings.add(code, file, line, detail, where, fix, severity)
+    def add(self, code: str, file: str, line: int, detail: str, where: str = "", fix: str = "", severity: str | None = None,
+            **extra: str) -> None:
+        self.findings.add(code, file, line, detail, where, fix, severity, **extra)
 
 
 # ------------------------------------------------------------------ small helpers

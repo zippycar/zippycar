@@ -3,6 +3,60 @@
 All notable changes to ha-config-doctor are listed here, newest first.
 Version numbers follow the usual pattern: the first number changes for big changes, the last for small fixes.
 
+## 1.1.0 — 2026-10-28
+
+Corrections after the owner pointed out that the built-in knowledge of removed features was out of date
+for their system (Home Assistant OS 18.4, Core 2026.10.4).
+
+### Changed
+
+- **Every fact about removed, retired and changed features now lives in `data/ha_rules.yaml`**, not in
+  the program. Each rule records the version where it was marked for retirement, the version where it
+  was removed (or changed), a plain-English explanation and fix, an official source page, the date it
+  was reviewed, whether it has been verified, and where the information came from. A test fails if a
+  retired feature's name is written into the code instead.
+- **Findings depend on your Home Assistant version**, read from the config folder's `.HA_VERSION` file or
+  given with `--ha-version`: a removed feature is an Error, one marked for retirement is a Warning, a
+  behaviour change is a Warning where it matters, and anything that only happens in a later version is a
+  Tidy-up. If no version is found, the newest one the rules cover (2026.10) is assumed and the report
+  says so.
+- **Old-style template entities** (`platform: template` for alarm_control_panel, binary_sensor, cover,
+  fan, light, lock, sensor, switch, vacuum and weather) are now **Errors from 2026.6**, each with a
+  suggested replacement written the current way (`template:` with `name`, `unique_id`,
+  `default_entity_id`, `state` and so on). Automations, templates and conditions that still use those
+  entities are reported too, because the entities no longer exist.
+- The report's summary shows the Home Assistant version used and how many rules are unverified; each
+  rule-based finding shows the affected versions, the official source and its verification status.
+- Check codes `removed-integration`, `deprecated-integration` and `deprecated-option` are replaced by
+  `retired-integration`, `retired-setting`, `retired-action` and `behaviour-change`.
+
+### Added
+
+- Rules for: `device_tracker.see` being retired (from 2026.5, removal planned for 2027.5) with template
+  device trackers as the replacement (template device trackers are now recognised as entities);
+  `mqtt.publish`, `mqtt.dump`, `synology_dsm.reboot` and `synology_dsm.shutdown` needing an administrator
+  from 2026.10 (reported in scripts, which people can run from dashboards); integrations removed in
+  2026.10 (Dublin Bus, Etherscan, Melnor RainCloud, Orange and Rockland Utility, Sigfox, SolarEdge Local,
+  Travis-CI, Zestimate) and switched off in 2026.10 (Linode, Tank Utility); VLC removed in 2026.9;
+  InfluxDB YAML connection settings removed in 2026.9; light `color_temp` (mireds) and `kelvin` removed
+  in 2026.3; Snapcast's own grouping actions removed in 2026.3.
+- A "still supported" list in the rules file: trigger IDs written in YAML keep working in 2026.10, and a
+  test makes sure they are never reported.
+- `list-rules` command, and `--ha-version` and `--rules` options.
+- GitHub Actions workflow running the tests on Windows and Ubuntu (Python 3.10 and 3.13), plus the
+  README's Windows commands exactly as written in Windows PowerShell 5.1.
+
+### Fixed
+
+- Tests now write their sample files byte for byte, so Windows doesn't change their line endings, and
+  `.gitattributes` keeps every checkout's line endings the same as on the Raspberry Pi.
+
+### Not verified
+
+- home-assistant.io could not be reached while these rules were written, so **every rule is marked
+  "unverified"**. Rules from the owner are marked as such; the 2026.1–2026.10 rules beyond those come
+  from web-search summaries, and older ones from the author's memory (see `docs/CHECKS.md`).
+
 ## 1.0.0 — 2026-10-28
 
 First release, written for Home Assistant OS / Core 2026.10.

@@ -89,9 +89,11 @@ def _identity(ctx: Ctx) -> None:
 
 def _structure(ctx: Ctx, a: Automation) -> None:
     raw_map = a.raw
+    retired_keys = {str(option) for rule in ctx.rules.rules if rule.kind == "automation_option"
+                    for option in as_list(rule.match.get("options"))}
     for key in raw_map:
-        if key == "hide_entity":
-            continue  # reported as a retired option
+        if key in retired_keys:
+            continue  # reported by the rules in data/ha_rules.yaml instead
         if key not in AUTOMATION_KEYS:
             ctx.add("unknown-automation-key", a.file, raw_map.key_line(key),
                     f'"{key}" isn\'t a setting automations have.{suggest(key, AUTOMATION_KEYS)}', a.where)

@@ -22,9 +22,14 @@ ROLE_TEXT = {
 
 
 def entity_status(ctx: Ctx, entity_id: str) -> tuple[str, str]:
-    """(status, extra) where status is ok, disabled, device-disabled, deleted, orphaned, orphaned-device, missing, unsure."""
+    """(status, extra) where status is ok, retired, disabled, device-disabled, deleted, orphaned, orphaned-device, missing, unsure."""
 
     reg, model = ctx.reg, ctx.model
+    retired = model.retired_defined.get(entity_id)
+    if retired is not None and entity_id not in model.defined:
+        definition, rule = retired
+        return "retired", (f"{entity_id} was defined in {definition.file}, line {definition.line}, in a way that "
+                           f"Home Assistant {rule.removed_in} stopped supporting, so it doesn't exist any more.")
     entity = reg.entities.get(entity_id)
     if entity is not None:
         if entity.disabled_by:
@@ -87,7 +92,11 @@ def run(ctx: Ctx) -> None:
             continue
         status, extra = entity_status(ctx, entity_id)
         role = ROLE_TEXT.get(ref.role, "")
-        if status == "disabled":
+        if status == "retired":
+            if ref.kind != "template":  # templates are reported by the template checks
+                ctx.add("unknown-entity", ref.file, ref.line, extra + role, ref.owner,
+                        fix="Rewrite its definition the current way (see the matching finding about it), keeping the same name.")
+        elif status == "disabled":
             ctx.add("disabled-entity", ref.file, ref.line,
                     f"{entity_id} is disabled" + (f" (disabled by: {extra})" if extra else "") + "." + role, ref.owner)
         elif status == "device-disabled":

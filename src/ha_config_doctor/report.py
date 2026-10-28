@@ -77,8 +77,22 @@ def summary_facts(result: "Result") -> dict:
         registry = ("Not found — entity names could only be partly checked. Copy the hidden-looking .storage folder "
                     "along with the rest of your configuration to have every entity name checked.")
     model = result.model
+    version = result.version
+    how = {"file": "from the .HA_VERSION file in the folder", "option": "as given with --ha-version",
+           "assumed": "not found in the folder, so the newest version the rules know about is assumed"}[version.source]
+    version_line = f"{version.text} ({how})."
+    if version.newer_than_rules:
+        version_line += (" The rules were last updated for an older version, so changes in newer versions "
+                         "of Home Assistant may be missing.")
+    book = result.rules
+    unverified = len(book.unverified)
+    rules_line = (f"{len(book.rules)} rules about removed, retired and changed features, last reviewed {book.as_of}. "
+                  + (f"{unverified} of them have not yet been checked against the official release notes, and are marked "
+                     "as such where they appear in this report." if unverified else "All have been checked against the official release notes."))
     return {
         "counts": counts,
+        "ha_version": version_line,
+        "rules": rules_line,
         "verdict": verdict,
         "folder": result.root.name,
         "when": result.when.strftime("%d %B %Y at %H:%M"),
@@ -135,6 +149,8 @@ def render_markdown(result: "Result") -> str:
     out.append(f"- {facts['files']} configuration file(s), {facts['automations']} automation(s), "
                f"{facts['scripts']} script(s), {facts['helpers']} helper(s), {facts['mentions']} different entity name(s).")
     out.append(f"- Home Assistant's own entity list: {facts['registry']}")
+    out.append(f"- Home Assistant version: {_md(facts['ha_version'])}")
+    out.append(f"- {_md(facts['rules'])}")
     out.append(f"- {PRIVACY_NOTE}")
     if facts["unfinished"]:
         out.append(f"- **{_md(facts['unfinished'])}**")
@@ -167,9 +183,18 @@ def render_markdown(result: "Result") -> str:
                 if finding.where:
                     line += f" — {_md(finding.where)}"
                 line += f": {_md(finding.detail)}"
+                if finding.when:
+                    line += f" *Versions:* {_md(finding.when)}"
                 if finding.fix and finding.fix != meta.fix:
                     line += f" *Suggested fix:* {_md(finding.fix)}"
+                if finding.source:
+                    line += f" *Source:* <{finding.source}> — {_md(finding.provenance)}"
                 out.append(line)
+                if finding.example:
+                    out.append("")
+                    out.append("  ```yaml")
+                    out.extend("  " + example_line for example_line in redact_text(finding.example).rstrip("\n").split("\n"))
+                    out.append("  ```")
             out.append("")
     out.append("---")
     out.append("")
@@ -210,6 +235,9 @@ ol.start li { margin: 6px 0; }
 .summary { page-break-after: always; break-after: page; }
 .note { color: var(--muted); font-size: .95rem; }
 code { font-family: Consolas, "Cascadia Mono", monospace; }
+pre.example { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto;
+  font-size: .9rem; line-height: 1.45; white-space: pre; overflow-wrap: normal; }
+.source { color: var(--muted); font-size: .9rem; margin-top: 4px; }
 @media print { body { font-size: 12pt; } .check { break-inside: avoid; } }
 """
 
@@ -254,6 +282,8 @@ def render_html(result: "Result") -> str:
     parts.append(f"<li>{facts['files']} configuration file(s), {facts['automations']} automation(s), {facts['scripts']} script(s), "
                  f"{facts['helpers']} helper(s), {facts['mentions']} different entity name(s).</li>")
     parts.append(f"<li>Home Assistant's own entity list: {_h(facts['registry'])}</li>")
+    parts.append(f"<li>Home Assistant version: {_h(facts['ha_version'])}</li>")
+    parts.append(f"<li>{_h(facts['rules'])}</li>")
     parts.append(f"<li>{_h(PRIVACY_NOTE)}</li>")
     if facts["unfinished"]:
         parts.append(f"<li><b>{_h(facts['unfinished'])}</b></li>")
@@ -286,8 +316,16 @@ def render_html(result: "Result") -> str:
                 if finding.where:
                     row += f' — <span class="where">{_h(finding.where)}</span>'
                 row += f"<br>{_h(finding.detail)}"
+                if finding.when:
+                    row += f'<div class="fix"><b>Versions:</b> {_h(finding.when)}</div>'
                 if finding.fix and finding.fix != meta_check.fix:
                     row += f'<div class="fix"><b>Suggested fix:</b> {_h(finding.fix)}</div>'
+                if finding.example:
+                    row += f'<pre class="example"><code>{_h(finding.example)}</code></pre>'
+                if finding.source:
+                    label = "unverified" if "Not yet checked" in finding.provenance else "verified"
+                    row += (f'<div class="source"><span class="badge {"w" if label == "unverified" else "t"}">{label}</span> '
+                            f'{_h(finding.provenance)} Source: <a href="{_h(finding.source)}">{_h(finding.source)}</a></div>')
                 parts.append(row + "</li>")
             parts.append("</ul></div>")
     parts.append('<p class="note">Made by ha-config-doctor, which only reads your files.</p>')
@@ -425,4 +463,42 @@ def checks_markdown() -> str:
             out.append(f"- **Why it matters:** {check.why}")
             out.append(f"- **How to fix it:** {check.fix}")
             out.append("")
+    out.extend(rules_markdown())
     return "\n".join(out)
+
+
+def rules_markdown() -> list[str]:
+    """The rules from data/ha_rules.yaml, for docs/CHECKS.md."""
+
+    from .rules import BASIS_TEXT, load_rules, version_text
+
+    book = load_rules()
+    out = ["## Rules about removed, retired and changed features", "",
+           f"These come from `data/ha_rules.yaml` (last reviewed {book.as_of}; newest Home Assistant release covered: "
+           f"{version_text(book.newest_release_known)}). For the version being checked, a removed feature is an Error, "
+           "a feature marked for retirement is a Warning, a behaviour change is a Warning where it matters, and anything "
+           "that only happens in a later version is a Tidy-up.", "",
+           f"**Verification:** {book.verification_status}", "",
+           "| Rule | Marked for retirement | Removed | Changed | Checked? | Based on | Source |",
+           "|---|---|---|---|---|---|---|"]
+    for rule in book.rules:
+        removed = rule.removed_in or (f"planned for {rule.planned_removal}" if rule.planned_removal else "—")
+        out.append(f"| `{rule.id}` | {rule.deprecated_in or '—'} | {removed} | {rule.changed_in or '—'} | "
+                   f"{rule.verification} | {BASIS_TEXT[rule.basis].replace('based on ', '')} | <{rule.source}> |")
+    out.append("")
+    for rule in book.rules:
+        out.append(f"### `{rule.id}`")
+        out.append("")
+        out.append(f"- **What happened:** {rule.explanation}")
+        out.append(f"- **What to do:** {rule.fix}")
+        if rule.basis_note:
+            out.append(f"- **How sure we are:** {rule.basis_note}")
+        out.append("")
+    if book.still_supported:
+        out.append("## Still supported (never reported)")
+        out.append("")
+        for item in book.still_supported:
+            out.append(f"- **{item.get('what')}** — {' '.join(str(item.get('note', '')).split())} "
+                       f"({item.get('verification')}; source <{item.get('source')}>)")
+        out.append("")
+    return out
