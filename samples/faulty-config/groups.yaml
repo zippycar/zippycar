@@ -1,0 +1,5 @@
+downstairs_lights:
+  name: Downstairs lights
+  entities:
+    - light.hall
+    - light.kitchen

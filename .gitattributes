@@ -1,0 +1,5 @@
+# Keep the same line endings on every computer, like the files on the Raspberry Pi.
+* text=auto eol=lf
+*.png binary
+# Deliberately not UTF-8: must never be converted.
+samples/faulty-config/latin1.yaml binary

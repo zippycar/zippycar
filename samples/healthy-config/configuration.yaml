@@ -1,0 +1,33 @@
+# A tidy, made-up example configuration. The doctor should find nothing wrong here.
+homeassistant:
+  name: Example Home
+  latitude: !secret home_latitude
+  longitude: !secret home_longitude
+  unit_system: metric
+  time_zone: Europe/London
+  packages: !include_dir_named packages
+
+default_config:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+input_boolean:
+  guest_mode:
+    name: Guest mode
+
+input_number:
+  heating_target:
+    name: Heating target
+    min: 10
+    max: 25
+    step: 0.5
+
+template:
+  - sensor:
+      - name: "Lounge temperature rounded"
+        unique_id: example_lounge_temperature_rounded
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.lounge_temperature') | float(0) | round(1) }}"
+        availability: "{{ has_value('sensor.lounge_temperature') }}"

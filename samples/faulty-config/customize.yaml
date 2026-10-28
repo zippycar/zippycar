@@ -1,0 +1,4 @@
+light.hall:
+  friendly_name: Hall light
+light.conservatory_lamp:
+  icon: mdi:lamp

@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "core.restore_state",
+  "data": [
+    {
+      "state": {
+        "entity_id": "automation.hall_light_with_motion",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.porch_light_at_sunset",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.porch_light_off_at_bedtime",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.heating_boost_when_cold",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.evening_scene_on_weekdays",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.motion_light_on_the_landing",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "automation.garden_pump_in_the_morning",
+        "state": "on",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    }
+  ]
+}

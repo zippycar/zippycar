@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "title": "Home",
+          "cards": [
+            {
+              "type": "entities",
+              "entities": [
+                "input_boolean.guest_mode",
+                "sensor.lounge_temperature_rounded"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

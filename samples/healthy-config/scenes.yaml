@@ -1,0 +1,6 @@
+- id: "1810000000001"
+  name: Evening
+  entities:
+    light.lounge_lamp:
+      state: "on"
+      brightness: 150

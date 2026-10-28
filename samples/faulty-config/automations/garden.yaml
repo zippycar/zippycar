@@ -1,0 +1,17 @@
+- id: garden_watering
+  alias: Garden watering
+  triggers:
+    - trigger: time
+      at: "06:00:00"
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.garden_temperature
+      above: 12
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.garden_valve
+    - delay: 1:30
+    - action: switch.turn_off
+      target:
+        entity_id: switch.garden_valve

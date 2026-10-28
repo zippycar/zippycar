@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install ".[test]"
+      - name: Run the tests
+        run: python -m pytest -v
+
+  windows-readme-steps:
+    name: The README's Windows commands, exactly as written
+    runs-on: windows-latest
+    defaults:
+      run:
+        # Windows PowerShell 5.1: what "Start > PowerShell" opens on Windows 11
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install the doctor (README step 4)
+        run: |
+          # "py" picks the newest Python on the machine, as it would on a home PC
+          py --version
+          py -m pip install --user .
+          if ($LASTEXITCODE -ne 0) { throw "install failed" }
+      - name: Check a copied config folder whose path has a space and a trailing backslash
+        run: |
+          $copy = Join-Path $env:RUNNER_TEMP "HA Copy"
+          New-Item -ItemType Directory -Force -Path $copy | Out-Null
+          Copy-Item -Recurse "samples\faulty-config" (Join-Path $copy "config")
+          New-Item -ItemType Directory -Force -Path "$HOME\Documents" | Out-Null
+          cd $HOME\Documents
+          py -m ha_config_doctor check "$copy\config\"
+          if ($LASTEXITCODE -ne 1) { throw "expected exit code 1 (errors found), got $LASTEXITCODE" }
+          if (-not (Test-Path "$HOME\Documents\ha-config-doctor-report\report.html")) { throw "report.html missing" }
+          if (-not (Test-Path "$HOME\Documents\ha-config-doctor-report\report.md")) { throw "report.md missing" }
+          exit 0  # the check's own exit code (1 = errors found) was expected above
+      - name: Check the healthy sample, then make a tidied copy
+        run: |
+          $copy = Join-Path $env:RUNNER_TEMP "HA Copy"
+          cd $HOME\Documents
+          py -m ha_config_doctor check "$env:GITHUB_WORKSPACE\samples\healthy-config"
+          if ($LASTEXITCODE -ne 0) { throw "healthy sample should have no errors, got $LASTEXITCODE" }
+          py -m ha_config_doctor tidy "$copy\config" "$copy\tidied"
+          if ($LASTEXITCODE -ne 0) { throw "tidy failed with $LASTEXITCODE" }
+          if (-not (Test-Path "$copy\tidied\CHANGES.html")) { throw "CHANGES.html missing" }
+          if (Test-Path "$copy\tidied\secrets.yaml") { throw "secrets.yaml must never be copied" }
+          exit 0
+      - name: Other commands from the README
+        run: |
+          py -m ha_config_doctor check "$env:GITHUB_WORKSPACE\samples\healthy-config" --ha-version 2026.10.4 --report-folder "$env:RUNNER_TEMP\report"
+          if ($LASTEXITCODE -ne 0) { throw "check with --ha-version failed with $LASTEXITCODE" }
+          py -m ha_config_doctor list-rules --ha-version 2026.10.4
+          if ($LASTEXITCODE -ne 0) { throw "list-rules failed with $LASTEXITCODE" }
+          py -m ha_config_doctor list-checks
+          py -m ha_config_doctor --version
+          if ($LASTEXITCODE -ne 0) { throw "version failed" }

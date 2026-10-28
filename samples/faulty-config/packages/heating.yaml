@@ -1,0 +1,20 @@
+script:
+  heating_boost:
+    alias: Heating boost
+    sequence:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.lounge
+        data:
+          temperature: 22
+      - delay:
+          minutes: 30
+  empty_script:
+    alias: Empty script
+    sequence: []
+  Bad Script Name:
+    alias: A script with spaces in its name
+    sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.lounge_lamp

@@ -1,0 +1,8 @@
+# An old copy that nothing includes any more.
+- alias: Old porch light
+  trigger:
+    platform: sun
+    event: sunset
+  action:
+    service: light.turn_on
+    entity_id: light.porch

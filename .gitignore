@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+# Reports and tidied copies made while trying the tool
+ha-config-doctor-report/
+tidied/

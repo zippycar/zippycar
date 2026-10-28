@@ -1,0 +1,11 @@
+- id: "1800000000001"
+  name: Evening
+  entities:
+    light.lounge_lamp:
+      state: "on"
+      brightness: 120
+    light.hall: "off"
+- id: "1800000000001"
+  name: Evening copy
+  entities:
+    light.kitchen: "on"
