@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "minor_version": 10,
+  "key": "core.device_registry",
+  "data": {
+    "devices": [
+      {
+        "id": "dev-lights",
+        "config_entries": [
+          "sample-entry"
+        ],
+        "disabled_by": null
+      },
+      {
+        "id": "dev-sensors",
+        "config_entries": [
+          "sample-entry"
+        ],
+        "disabled_by": null
+      },
+      {
+        "id": "dev-switches",
+        "config_entries": [
+          "sample-entry"
+        ],
+        "disabled_by": null
+      },
+      {
+        "id": "dev-climate",
+        "config_entries": [
+          "sample-entry"
+        ],
+        "disabled_by": null
+      }
+    ],
+    "deleted_devices": []
+  }
+}

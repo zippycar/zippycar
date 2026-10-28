@@ -1,0 +1,17 @@
+heating_boost:
+  alias: Heating boost
+  description: Warms the lounge for half an hour.
+  mode: single
+  sequence:
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.lounge
+      data:
+        temperature: "{{ states('input_number.heating_target') | float(20) + 1 }}"
+    - delay:
+        minutes: 30
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.lounge
+      data:
+        temperature: "{{ states('input_number.heating_target') | float(20) }}"

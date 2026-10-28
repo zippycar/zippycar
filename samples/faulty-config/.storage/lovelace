@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "title": "Home",
+          "cards": [
+            {
+              "type": "entities",
+              "entities": [
+                "input_boolean.holiday_mode",
+                "light.hall"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

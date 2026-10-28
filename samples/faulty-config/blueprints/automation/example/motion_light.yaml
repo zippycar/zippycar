@@ -1,0 +1,39 @@
+blueprint:
+  name: Example motion light
+  description: A made-up blueprint used to test the checks.
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    light_target:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+    brightness:
+      name: Brightness
+      default: 100
+    unused_setting:
+      name: Never used
+      default: 1
+mode: restart
+triggers:
+  - trigger: state
+    entity_id: !input motion_sensor
+    to: "on"
+actions:
+  - action: light.turn_on
+    target: !input light_target
+    data:
+      brightness_pct: !input brightness
+  - wait_for_trigger:
+      - trigger: state
+        entity_id: !input motion_sensor
+        to: "off"
+    timeout: !input wait_time
+  - action: light.turn_off
+    target: !input light_target

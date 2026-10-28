@@ -1,0 +1,34 @@
+blueprint:
+  name: Example motion light
+  description: A made-up blueprint used by the healthy sample.
+  domain: automation
+  input:
+    motion_sensor:
+      name: Motion sensor
+      selector:
+        entity:
+          domain: binary_sensor
+    light_target:
+      name: Light
+      selector:
+        target:
+          entity:
+            domain: light
+mode: restart
+max_exceeded: silent
+triggers:
+  - trigger: state
+    entity_id: !input motion_sensor
+    from: "off"
+    to: "on"
+actions:
+  - action: light.turn_on
+    target: !input light_target
+  - wait_for_trigger:
+      - trigger: state
+        entity_id: !input motion_sensor
+        from: "on"
+        to: "off"
+    timeout: "00:10:00"
+  - action: light.turn_off
+    target: !input light_target

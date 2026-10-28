@@ -1,0 +1,4 @@
+# Ends in .yml, so the include folder ignores it.
+input_boolean:
+  forgotten_flag:
+    name: Forgotten flag

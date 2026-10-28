@@ -1,0 +1,3 @@
+# This file should hold a list (lines starting with "-") but holds a named block instead.
+watering_note:
+  alias: This is ignored

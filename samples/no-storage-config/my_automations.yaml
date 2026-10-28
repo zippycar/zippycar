@@ -1,0 +1,11 @@
+- id: no_storage_example
+  alias: Uses a helper made in the screens
+  triggers:
+    - trigger: state
+      entity_id: input_boolean.made_in_the_screens
+      from: "off"
+      to: "on"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.anything

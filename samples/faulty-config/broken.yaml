@@ -1,0 +1,2 @@
+this_line: is fine
+	tabbed_line: uses a TAB, which YAML does not allow

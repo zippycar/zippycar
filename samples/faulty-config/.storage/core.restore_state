@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "core.restore_state",
+  "data": [
+    {
+      "state": {
+        "entity_id": "automation.old_garden_lights",
+        "state": "off",
+        "attributes": {
+          "friendly_name": "Old garden lights"
+        },
+        "last_changed": "2026-10-01T00:00:00+00:00"
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    },
+    {
+      "state": {
+        "entity_id": "input_boolean.guest_mode",
+        "state": "off",
+        "attributes": {}
+      },
+      "extra_data": null,
+      "last_seen": "2026-10-27T00:00:00+00:00"
+    }
+  ]
+}

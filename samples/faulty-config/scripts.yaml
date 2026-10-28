@@ -1,0 +1,21 @@
+goodnight_lights:
+  alias: Goodnight lights
+  sequence:
+    - action: light.turn_off
+      target:
+        entity_id: light.kitchen
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+    - action: lock.lock
+      target:
+        entity_id: lock.front_door
+morning_wait:
+  alias: Wait for sunrise
+  sequence:
+    - wait_for_trigger:
+        - platform: sun
+          event: sunrise
+    - action: cover.open_cover
+      target:
+        entity_id: cover.lounge_blind

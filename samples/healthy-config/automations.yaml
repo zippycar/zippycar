@@ -1,0 +1,79 @@
+- id: "1710000000001"
+  alias: Hall light with motion
+  description: Turns the hall light on with motion, and off two minutes after the motion stops.
+  mode: restart
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.hall_motion
+      from: "off"
+      to: "on"
+  conditions:
+    - condition: state
+      entity_id: sun.sun
+      state: below_horizon
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.hall
+    - wait_for_trigger:
+        - trigger: state
+          entity_id: binary_sensor.hall_motion
+          from: "on"
+          to: "off"
+          for: "00:02:00"
+      timeout: "00:30:00"
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+- id: "1710000000002"
+  alias: Porch light at sunset
+  triggers:
+    - trigger: sun
+      event: sunset
+      offset: "-00:15:00"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.porch
+- id: "1710000000003"
+  alias: Porch light off at bedtime
+  triggers:
+    - trigger: time
+      at: "23:30:00"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.porch
+- id: "1710000000004"
+  alias: Heating boost when cold
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.lounge_temperature
+      below: input_number.heating_target
+      for: "00:10:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: "on"
+  actions:
+    - action: script.heating_boost
+- id: "1710000000005"
+  alias: Evening scene on weekdays
+  triggers:
+    - trigger: time
+      at: "19:00:00"
+  conditions:
+    - condition: time
+      weekday: [mon, tue, wed, thu, fri]
+  actions:
+    - action: scene.turn_on
+      target:
+        entity_id: scene.evening
+- id: "1710000000006"
+  alias: Motion light on the landing
+  use_blueprint:
+    path: example/motion_light.yaml
+    input:
+      motion_sensor: binary_sensor.landing_motion
+      light_target:
+        entity_id: light.landing

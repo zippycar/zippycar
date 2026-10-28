@@ -1,0 +1,6 @@
+# Made-up example with no .storage folder and no secrets.yaml.
+homeassistant:
+  name: Example without storage
+  latitude: !secret home_latitude
+
+automation: !include my_automations.yaml

@@ -1,0 +1,21 @@
+# Garden package: a pump that runs for a while each morning.
+automation:
+  - id: garden_pump_morning
+    alias: Garden pump in the morning
+    triggers:
+      - trigger: time
+        at: "07:00:00"
+    conditions:
+      - condition: numeric_state
+        entity_id: sensor.garden_temperature
+        above: 5
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.garden_pump
+      - delay: "00:15:00"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.garden_pump
+    mode: single
+    max_exceeded: silent

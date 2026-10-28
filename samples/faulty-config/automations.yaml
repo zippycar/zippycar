@@ -1,0 +1,557 @@
+# Made-up automations for ha-config-doctor's sample. Every mistake is deliberate.
+- id: "1700000000001"
+  alias: Hall light on with motion
+  description: Turns the hall light on when someone walks past.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.hall_motion
+      to: "on"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.hall
+    - delay: "00:05:00"
+    - service: light.turn_off
+      target:
+        entity_id: light.hall
+- id: "1700000000002"
+  alias: Landing light on with motion
+  description: Turns the landing light on when someone walks past.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.landing_motion
+      to: "on"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.landing
+    - delay: "00:05:00"
+    - service: light.turn_off
+      target:
+        entity_id: light.landing
+- id: "1700000000003"
+  alias: Kitchen light on with motion
+  description: Turns the kitchen light on when someone walks past.
+  trigger:
+    - platform: state
+      entity_id: binary_sensor.kitchen_motion
+      to: "on"
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.kitchen
+    - delay: "00:05:00"
+    - service: light.turn_off
+      target:
+        entity_id: light.kitchen
+- id: "1700000000003"
+  alias: Hall light on with motion
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+      to: on
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.hall
+- triggers:
+    - trigger: time
+      at: 7:30
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.coffee_machine
+- id: "1700000000006"
+  alias: Typo in a setting
+  triger:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+  condition: []
+  conditions: []
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.porch
+  mode: single
+  mode: restart
+- id: "1700000000007"
+  alias: Nothing to do
+  initial_state: false
+  hide_entity: true
+  mode: singel
+  triggers:
+    - trigger: homeassistant
+      event: start
+  actions: []
+- id: "1700000000008"
+  alias: Old garden lights
+  triggers:
+    - trigger: sun
+      event: sunset
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.garden
+- id: "1700000000009"
+  alias: Wait for the door to close
+  mode: queued
+  max: 50
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+      from: "off"
+      to: "on"
+  actions:
+    - wait_template: "{{ is_state('binary_sensor.front_door', 'off') }}"
+    - repeat:
+        while:
+          - condition: state
+            entity_id: binary_sensor.front_door
+            state: "on"
+        sequence:
+          - action: notify.notify
+            data:
+              message: The front door is still open
+- id: "1700000000010"
+  alias: Log every power reading
+  mode: restart
+  triggers:
+    - trigger: state
+      entity_id: sensor.hall_plug_power
+  actions:
+    - delay: 30
+    - action: logbook.log
+      data_template:
+        name: Power
+        message: "{{ states('sensor.hall_plug_power') }}"
+- id: "1700000000011"
+  alias: Keep the lounge lamp toggling
+  mode: parallel
+  triggers:
+    - trigger: state
+      entity_id: light.lounge_lamp
+    - trigger: state
+      entity_id: binary_sensor.kitchen_motion
+      to: unavailable
+  actions:
+    - action: light.toggle
+      target:
+        entity_id: light.lounge_lamp
+- id: "1700000000012"
+  alias: Impossible conditions
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.lounge_temperature
+      above: 25
+      below: 18
+    - trigger: numeric_state
+      entity_id: binary_sensor.front_door
+      above: 0
+    - trigger: state
+      entity_id: light.kitchen
+      from: "on"
+      to: "on"
+    - trigger: state
+      entity_id: light.kitchen
+      from: "on"
+      to: "on"
+  conditions:
+    - condition: sun
+      after: sunset
+      before: sunrise
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: "on"
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: "off"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.kitchen
+- id: "1700000000013"
+  alias: Switched-off triggers
+  triggers:
+    - trigger: template
+      value_template: "true"
+      enabled: false
+    - trigger: state
+      entity_id: "{{ 'light.' ~ 'hall' }}"
+      enabled: false
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+- id: "1700000000014"
+  alias: Mixed up trigger ids
+  triggers:
+    - trigger: time
+      at: "25:00"
+      id: morning
+    - trigger: time_pattern
+      minutes: 75
+      id: regular
+    - trigger: sunrise
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: mornign
+          sequence:
+            - delay: 5 minutes
+    - action: light.turn_on
+      target:
+        entity_id: Light.Hall
+    - condition: weather
+    - delayy: 5
+- id: "1700000000015"
+  alias: Announce what changed
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+      to: "on"
+      not_from: ["unavailable", "unknown"]
+    - trigger: time
+      at: "21:00:00"
+  actions:
+    - action: notify.notify
+      data:
+        message: "{{ trigger.to_state.name }} changed"
+- id: "1700000000016"
+  alias: Morning coffee
+  triggers:
+    - trigger: time
+      at: "06:30:00"
+  conditions:
+    - condition: time
+      after: "08:00:00"
+      before: "11:00:00"
+  actions:
+    - action: switch.turn_on
+      target:
+        entity_id: switch.coffee_machine
+- id: "1700000000017"
+  alias: Porch light on when the door opens
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+      from: "off"
+      to: "on"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.porch
+- id: "1700000000018"
+  alias: Porch light off when the door opens
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.front_door
+      from: "off"
+      to: "on"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.porch
+- id: "1700000000019"
+  alias: Garden lights off late
+  triggers:
+    - trigger: time
+      at: "22:00:00"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.garden
+- id: "1700000000020"
+  alias: Garden lights on late
+  triggers:
+    - trigger: time
+      at: "22:00:30"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.garden
+- id: "1700000000021"
+  alias: Garden lights on at sunset
+  triggers:
+    - trigger: sun
+      event: sunset
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.garden
+- id: "1700000000022"
+  alias: Garden lights off at eight
+  triggers:
+    - trigger: time
+      at: "20:00:00"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.garden
+- id: "1700000000023"
+  alias: Flash the landing light
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.landing_motion
+      from: "off"
+      to: "on"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.landing
+    - action: light.turn_off
+      target:
+        entity_id: light.landing
+- id: "1700000000024"
+  alias: Template troubles
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.lounge_temperature
+      below: 16
+  conditions:
+    - condition: template
+      value_template: "{{ states('sensor.lounge_temperature') > 15 }}"
+    - "{{ states.sensor.lounge_temperature.state | float > 10 }}"
+    - condition: template
+      value_template: "{{ is_state('binary_sensor.lounge_window', 'off') }}"
+    - condition: template
+      value_template: "{{ states('sensor.lounge_temperature') | float( }}"
+  actions:
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.lounge
+      data:
+        temperature: "{{ states('input_number.target_temperature') | float }}"
+- id: "1700000000025"
+  alias: Broken references
+  triggers:
+    - trigger: state
+      entity_id: switch.old_heater
+      from: "off"
+      to: "on"
+  actions:
+    - action: script.bedtime_routine
+    - action: scene.turn_on
+      target:
+        entity_id: scene.movie_night_missing
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.party_mode
+    - action: automation.turn_off
+      target:
+        entity_id: automation.does_not_exist
+    - action: shell_command.reboot_router
+    - action: light.turn_on
+      target:
+        entity_id: light.shed
+    - action: switch.turn_on
+      target:
+        entity_id: switch.pond_pump
+    - action: light.turn_on
+      target:
+        entity_id: light.conservatry
+    - condition: numeric_state
+      entity_id: sensor.attic_humidity
+      above: 70
+    - device_id: 0123456789abcdef0123456789abcdef
+      domain: light
+      entity_id: aaaabbbbccccddddeeeeffff00001111
+      type: turn_on
+- id: "1700000000026"
+  alias: Old light settings
+  triggers:
+    - trigger: sun
+      event: sunset
+      offset: "-00:30:00"
+  conditions:
+    - condition: state
+      entity_id: person.resident
+      state: home
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.lounge_lamp
+      data:
+        color_temp: 370
+        white_value: 200
+    - action: weather.get_forecast
+      target:
+        entity_id: weather.home
+      response_variable: forecast
+    - action: notify.notify
+      data:
+        message: "Tonight: {{ state_attr('weather.home', 'forecast')[0].condition }}"
+- id: "1700000000027"
+  alias: Morning routine
+  description: A very long list of steps.
+  triggers:
+    - trigger: time
+      at: "06:45:00"
+  conditions:
+    - condition: state
+      entity_id: input_boolean.holiday_mode
+      state: "off"
+  actions:
+    - action: light.turn_on
+      target:
+        entity_id: light.hall
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+    - action: light.turn_on
+      target:
+        entity_id: light.kitchen
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.kitchen
+    - action: light.turn_on
+      target:
+        entity_id: light.landing
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.landing
+    - action: light.turn_on
+      target:
+        entity_id: light.porch
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.porch
+    - action: light.turn_on
+      target:
+        entity_id: light.garden
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.garden
+    - action: light.turn_on
+      target:
+        entity_id: light.lounge_lamp
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.lounge_lamp
+    - action: light.turn_on
+      target:
+        entity_id: light.conservatory
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.conservatory
+    - action: light.turn_on
+      target:
+        entity_id: light.hall
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+    - action: light.turn_on
+      target:
+        entity_id: light.kitchen
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.kitchen
+    - action: light.turn_on
+      target:
+        entity_id: light.landing
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.landing
+    - action: light.turn_on
+      target:
+        entity_id: light.porch
+    - delay:
+        seconds: 2
+    - action: light.turn_off
+      target:
+        entity_id: light.porch
+- id: "1700000000028"
+  alias: Deeply nested
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.hall_motion
+      to: "on"
+      not_from: ["unavailable", "unknown"]
+  conditions:
+    - condition: state
+      entity_id: input_boolean.guest_mode
+      state: "off"
+  actions:
+    - choose:
+        - conditions:
+            - condition: state
+              entity_id: light.hall
+              state: "off"
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.kitchen
+                  state: "off"
+              then:
+                - choose:
+                    - conditions:
+                        - condition: state
+                          entity_id: light.landing
+                          state: "off"
+                      sequence:
+                        - if:
+                            - condition: state
+                              entity_id: light.porch
+                              state: "off"
+                          then:
+                            - action: light.turn_on
+                              target:
+                                entity_id: light.hall
+- id: "1700000000029"
+  alias: Goodnight
+  triggers:
+    - trigger: time
+      at: "23:15:00"
+  actions:
+    - action: light.turn_off
+      target:
+        entity_id: light.kitchen
+    - action: light.turn_off
+      target:
+        entity_id: light.hall
+    - action: lock.lock
+      target:
+        entity_id: lock.front_door
+- id: "1700000000030"
+  alias: Motion light from blueprint
+  use_blueprint:
+    path: example/motion_light.yaml
+    input:
+      motion_sensor: binary_sensor.hall_motion
+      brightnes: 80
+- id: "1700000000031"
+  alias: Blueprint that is missing
+  use_blueprint:
+    path: example/does_not_exist.yaml
+    input: {}
+- id: "1700000000032"
+  alias: Every power update
+  mode: queued
+  triggers:
+    - trigger: event
+      event_type: state_changed
+  actions:
+    - action: logbook.log
+      data:
+        name: Change
+        message: Something changed
