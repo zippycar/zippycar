@@ -14,8 +14,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
@@ -31,12 +31,13 @@ jobs:
         # Windows PowerShell 5.1: what "Start > PowerShell" opens on Windows 11
         shell: powershell
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Install the doctor (README step 4)
         run: |
+          # "py" picks the newest Python on the machine, as it would on a home PC
           py --version
           py -m pip install --user .
           if ($LASTEXITCODE -ne 0) { throw "install failed" }
@@ -51,6 +52,7 @@ jobs:
           if ($LASTEXITCODE -ne 1) { throw "expected exit code 1 (errors found), got $LASTEXITCODE" }
           if (-not (Test-Path "$HOME\Documents\ha-config-doctor-report\report.html")) { throw "report.html missing" }
           if (-not (Test-Path "$HOME\Documents\ha-config-doctor-report\report.md")) { throw "report.md missing" }
+          exit 0  # the check's own exit code (1 = errors found) was expected above
       - name: Check the healthy sample, then make a tidied copy
         run: |
           $copy = Join-Path $env:RUNNER_TEMP "HA Copy"
@@ -61,6 +63,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "tidy failed with $LASTEXITCODE" }
           if (-not (Test-Path "$copy\tidied\CHANGES.html")) { throw "CHANGES.html missing" }
           if (Test-Path "$copy\tidied\secrets.yaml") { throw "secrets.yaml must never be copied" }
+          exit 0
       - name: Other commands from the README
         run: |
           py -m ha_config_doctor list-checks
