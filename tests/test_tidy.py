@@ -64,7 +64,7 @@ def test_tidied_file_means_the_same_to_home_assistant(make_config, tmp_path):
     root = _config(make_config)
     tidy(examine(root), tmp_path / "out")
     old = to_plain(parse_yaml(OLD_STYLE, "a").data)
-    new = to_plain(parse_yaml((tmp_path / "out" / "automations.yaml").read_text(), "a").data)
+    new = to_plain(parse_yaml((tmp_path / "out" / "automations.yaml").read_text(encoding="utf-8"), "a").data)
     first = old[0]
     first["triggers"] = [{"trigger" if k == "platform" else k: v for k, v in t.items()} for t in first.pop("trigger")]
     actions = first.pop("action")
@@ -78,7 +78,7 @@ def test_tidied_file_means_the_same_to_home_assistant(make_config, tmp_path):
 def test_tidying_twice_changes_nothing_more(make_config, tmp_path):
     root = _config(make_config)
     tidy(examine(root), tmp_path / "once")
-    again = _config(make_config, automations=(tmp_path / "once" / "automations.yaml").read_text())
+    again = _config(make_config, automations=(tmp_path / "once" / "automations.yaml").read_text(encoding="utf-8"))
     report = tidy(examine(again), tmp_path / "twice")
     assert report.changed == []
 
@@ -88,7 +88,7 @@ def test_comments_are_kept_and_order_left_alone_when_comments_are_inside(make_co
             "    event: sunset\n  action:\n    - service: light.turn_on  # porch\n")
     root = _config(make_config, automations=text)
     report = tidy(examine(root), tmp_path / "out")
-    new = (tmp_path / "out" / "automations.yaml").read_text()
+    new = (tmp_path / "out" / "automations.yaml").read_text(encoding="utf-8")
     assert comment_texts(new) == comment_texts(text)
     assert new.index("alias") < new.index("id: c1")  # not reordered: comments inside
     assert "triggers:" in new and "trigger: sun" in new and "action: light.turn_on" in new
@@ -113,7 +113,7 @@ def test_variables_keep_their_order_and_both_keys_are_not_merged(make_config, tm
     root = _config(make_config, automations=text)
     tidy(examine(root), tmp_path / "out")
     new_path = tmp_path / "out" / "automations.yaml"
-    new = new_path.read_text() if new_path.exists() else text
+    new = new_path.read_text(encoding="utf-8") if new_path.exists() else text
     assert new.index("b: 1") < new.index("a: ")
     assert "trigger: []" in new and "triggers: []" in new  # both present: reported, never auto-merged
 
@@ -132,17 +132,17 @@ def test_named_sections_sorted_only_when_safe(make_config, tmp_path):
     root = make_config({"configuration.yaml": "input_boolean:\n  zebra: {}\n  apple: {}\nscript: !include scripts.yaml\n",
                         "scripts.yaml": "zz:\n  sequence: []\n# keep me here\naa:\n  sequence: []\n"})
     tidy(examine(root), tmp_path / "out")
-    config = (tmp_path / "out" / "configuration.yaml").read_text()
+    config = (tmp_path / "out" / "configuration.yaml").read_text(encoding="utf-8")
     assert config.index("apple") < config.index("zebra")
     scripts_path = tmp_path / "out" / "scripts.yaml"
-    scripts = scripts_path.read_text() if scripts_path.exists() else (root / "scripts.yaml").read_text()
+    scripts = scripts_path.read_text(encoding="utf-8") if scripts_path.exists() else (root / "scripts.yaml").read_text(encoding="utf-8")
     assert scripts.index("zz") < scripts.index("aa")  # has a comment, so left in its order
 
 
 def test_keep_order_option(make_config, tmp_path):
     root = _config(make_config)
     tidy(examine(root), tmp_path / "out", keep_order=True)
-    new = (tmp_path / "out" / "automations.yaml").read_text()
+    new = (tmp_path / "out" / "automations.yaml").read_text(encoding="utf-8")
     assert new.index("alias: Hall light") < new.index("id: hall_light")
 
 
@@ -154,7 +154,7 @@ def test_output_folder_rules(make_config, tmp_path):
         check_output_folder(root, root.parent)
     busy = tmp_path / "busy"
     busy.mkdir()
-    (busy / "something.txt").write_text("x")
+    (busy / "something.txt").write_text("x", encoding="utf-8")
     with pytest.raises(OutputFolderProblem):
         check_output_folder(root, busy)
     tidy(examine(root), tmp_path / "ours")

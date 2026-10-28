@@ -23,9 +23,10 @@ def write_config(root: Path, files: dict[str, str | dict | bytes]) -> Path:
         if isinstance(content, bytes):
             path.write_bytes(content)
         elif isinstance(content, (dict, list)):
-            path.write_text(json.dumps(content), encoding="utf-8")
+            path.write_bytes(json.dumps(content).encode("utf-8"))
         else:
-            path.write_text(textwrap.dedent(content).lstrip("\n"), encoding="utf-8")
+            # bytes, not text mode: Windows would otherwise turn every line ending into CRLF
+            path.write_bytes(textwrap.dedent(content).lstrip("\n").encode("utf-8"))
     return root
 
 
